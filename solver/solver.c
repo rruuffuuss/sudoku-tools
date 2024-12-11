@@ -28,6 +28,8 @@ void printIntBoard(int* board){
     }
 }
 
+
+
 int *solve(int* inputBoard){
 
 
@@ -264,9 +266,11 @@ int *solve3(int* inputBoard){
     int board[area];
     int set[width];
     int perm[width - 1];
-    for(int i = 0; i < width - 1; i++){
+    //int regionSetCounter;
+    
+    /*for(int i = 0; i < width - 1; i++){
         perm[i] = 0;
-    }
+    }*/
 
     for(int i = 0; i < area; i++){
         if(inputBoard[i] == 0) board[i] = 1022;
@@ -277,25 +281,16 @@ int *solve3(int* inputBoard){
 
     printIntBoard(board);
 
-    
 
     int runThrough = 0;
     while(runThrough < 10){ //prevent infinite loop
         
-
+        
         //retain unique for columns
-        for(int i = 0; i < area; i++){
+        for(int i = 0; i < width; i++){
             for(int y = 0; y < width; y++){
                 set[y] = board[y * width + i];  
             }
-            /*printf("\n--------------------\n");
-            printIntBoard(board);
-            printf("\n--------------------\n");
-            for(int y = 0; y < width; y++){
-                printf("%d", set[y]);
-                printf(",");
-            }
-            fflush(stdout);*/
             for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size  
                 retainUnique(width, perm, y, 0, 0, set);
             }
@@ -312,29 +307,25 @@ int *solve3(int* inputBoard){
             }
         }
 
-        int ballsack2[width - 1];
-
         //retain unique for region
-        for(int i = 0; i < area; i += rootWidth){
-            for(int y = 0; y < rootWidth * width; y += width){
-                for(int o = 0; o < rootWidth; o++){
-                    set[o + (y / width) * rootWidth] = board[i + y + o];
+        
+        for(int i = 0; i < area; i += rootWidth * width){//each vertical region
+            for(int j = 0; j < width; j += rootWidth){//each horizontal region
+                
+                for(int y = 0, regionSetCounter = 0; y < rootWidth * width; y += width){//each row within a region
+                    for(int o = 0; o < rootWidth; o++, regionSetCounter++){//each column within a region
+                        set[regionSetCounter] = board[i + j + y + o];
+                    }
                 }
-            }
-            printf("\n--------------------\n");
-            printIntBoard(board);
-            printf("\n--------------------\n");
-            for(int y = 0; y < width; y++){
-                printf("%d", set[y]);
-                printf(",");
-            }
-            fflush(stdout);
-            for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size  
-                retainUnique(width, perm, y, 0, 0, set);
-            }
-            for(int y = 0; y < rootWidth * width; y += width){
-                for(int o = 0; o < rootWidth; o++){
-                    board[i + y + o] = set[o + (y / width) * rootWidth];
+
+                for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size  
+                    retainUnique(width, perm, y, 0, 0, set);
+                }
+
+                for(int y = 0, regionSetCounter = 0; y < rootWidth * width; y += width){//each row within a region
+                    for(int o = 0; o < rootWidth; o++, regionSetCounter++){//each column within a region
+                        board[i + j + y + o] = set[regionSetCounter];
+                    }
                 }
             }
         }
@@ -353,11 +344,12 @@ int *solve3(int* inputBoard){
         }*/
  
         runThrough++;
+        printf("--------------------\n");
+        printIntBoard(board);
+        fflush(stdout);
         
     }
-    printf("--------------------\n");
-    printIntBoard(board);
-    fflush(stdout);
+    
 }
 
 
