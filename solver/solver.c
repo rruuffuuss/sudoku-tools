@@ -9,9 +9,8 @@ void intToMap(int n, int *c){
     *c = 1 << (n);
 }
 
-
 int mapToInt(int c){
-    int r = 1;
+    int r = 0;
     while(c >>= 1){
         r++;
     }
@@ -28,82 +27,17 @@ void printIntBoard(int* board){
     }
 }
 
-
-
-int *solve(int* inputBoard){
-
-
-
-    //int cellbytes = ((size / 8) + 1);
-
-    //int area = width * width;
-
-    int board[area];
-    int res;
-    int rem;
-    int mask;
-
-    /*
-    Convert the board from an array of integers to an array of maps of potential numbers
-    in the inputBoard 0 represents an empty cell and 1 through 9 represent starting numbers
-    in the working Board, a positive bit at an index represents potential that the index could be the answer for the cell
-    smallest bit set to 0 when final value
-    */
-    for(int i = 0; i < area; i++){
-        if(inputBoard[i] == 0) board[i] = 1023;
+void intBoardToMapBoard(int* inputBoard, int* board, int len){
+    for(int i = 0; i < len; i++){
+        if(inputBoard[i] == 0) board[i] = 1022;
         else intToMap(inputBoard[i], &board[i]);
     }
-    
-    printf("--------------------\n");
+}
 
-    //printIntBoard(board);
-
-    
-
-    int runThrough = 0;
-    while(runThrough < 10){ //prevent infinite loop
-        for(int i = 0; i < area; i++){
-            if(board[i] % 2 == 1){ 
-
-                res = 0;
-                rem = 0;
-
-                //loop through row
-                for(int y = (i / width) * width; y < ((i / width) * width) + width; y++){
-                    if(board[y] % 2 != 1) res = res | board[y];
-                    else rem = rem | board[y];
-                }
-
-                //loop through column
-                for(int y = i % width; y < area; y += width){
-                    if(board[y] % 2 != 1) res = res | board[y];
-                    else rem = rem | board[y];
-                }
-
-                
-                //loop through region
-                for(int y = (i / (width * rootWidth)) * width * rootWidth; y < i + width * rootWidth; y += width){
-                    for(int o = ((i % width) / rootWidth) * rootWidth; o < rootWidth; o++){
-                        if(board[y + o] % 2 != 1) res = res | board[y + o];
-                        else rem = rem | board[y + o];
-                    }
-
-                }
-                
-                board[i] = board[i] & ~res & 1023; //set the cell to all numbers that do not conflict with known cell
-                if(board[i] - 1 & board[i] - 2 == 0) board[i]--;//set last bit zero when final value reached
-                else{
-                    //if cell is the only one with possible value in cell/column/region then set cell to value
-                    mask = board[i] & ~rem & 1022; //set the cell to all numbers that do not
-                    if(mask & mask - 1 == 0) board[i] = mask;
-                }
-            }
-        }
-        runThrough++;
-        printf("--------------------\n");
-        printIntBoard(board);
+void mapBoardToIntBoard(int* inputBoard, int* board, int len){
+    for(int i = 0; i < len; i++){
+        board[i] = mapToInt(inputBoard[i]);
     }
-
 }
 
 /*
@@ -135,9 +69,17 @@ permUnique = permAnd & ~notPermOr
 
 if the number of set bits in permUnique = currentPermLength
     set all cells in current permutation to permUnique
+    set all cells outside the current permutation to value AND NOT permUnique
 */
+
+
 void retainUnique(int setSize, int* perm, int permLength, int depth, int start, int* set){
     if(depth == permLength){
+
+        int permMask[setSize];
+        for(int i = 0; i < setSize; i++) permMask[i] = 0;
+        for(int i = 0; i < permLength; i++) permMask[perm[i]] = 1;
+
 
         /*
         for(int i = 0; i < permLength; i++){
@@ -150,24 +92,29 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
         int notPermOr = 0;
         int permUnique;
 
+        int first = set[perm[0]];
+        int equalCheck = 1;
+
         for(int i = 0; i < setSize; i++){
-
-            int inPerm = 0;
-            for(int y = 0; y < permLength; y++){
-                if(i == perm[y]) inPerm = 1;
-            }
-
-            if(inPerm) {
+            if(permMask[i]) {
                 permAnd = permAnd & set[i];
+                if(equalCheck && first != set[i]) equalCheck = 0;
             }
             else notPermOr = notPermOr | set[i];
         }
 
         permUnique = permAnd & ~notPermOr;
 
+        if(equalCheck && __builtin_popcount(first) <= permLength){
+            for(int i = 0; i < setSize; i++){
+                if(!permMask[i]) set[i] = set[i] & ~first;
+            }
+        }
+
         if(__builtin_popcount(permUnique) == permLength){
-            for(int i = 0; i < permLength; i++){
-                set[perm[i]] = permUnique;
+            for(int i = 0; i < setSize; i++){
+                if(permMask[i]) set[i] = permUnique;
+                else set[i] = set[i] & ~permUnique;
             }
         }
     } else {
@@ -178,108 +125,13 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
     }
 }
 
-void permGenerate(int setSize, int* perm, int permLength, int depth, int start){
-    if(depth == permLength){
-        for(int i = 0; i < permLength; i++){
-            //printf("%d", perm[i]);
-        }
-        //printf("\n");
-    } else {
-        for(int i = start; i < setSize - (permLength - depth) + 1; i++){
-            perm[depth] = i;
-            permGenerate(setSize, perm, permLength, depth + 1, i + 1);
-        }
-    }
-}
+void solve3(int* inputBoard, int* board){
 
+    //int board[area]; 
+    intBoardToMapBoard(inputBoard, board, area);
 
-
-int *solve2(int* inputBoard){
-
-
-
-    //int cellbytes = ((size / 8) + 1);
-
-    //int area = width * width;
-
-    int board[area];
-    int set[width];
-    int res;
-
-    for(int i = 0; i < area; i++){
-        if(inputBoard[i] == 0) board[i] = 1023;
-        else intToMap(inputBoard[i], &board[i]);
-    }
-    
-    printf("--------------------\n");
-
-    printIntBoard(board);
-
-    
-
-    int runThrough = 0;
-    while(runThrough < 10){ //prevent infinite loop
-        for(int i = 0; i < area; i++){
-            if(board[i] % 2 == 1){ 
-
-                res = 0;
-
-                //loop through row
-                for(int y = (i / width) * width; y < ((i / width) * width) + width; y++){
-                    if(board[y] % 2 != 1) res = res | board[y];                   
-                }
-
-                //loop through column
-                for(int y = i % width; y < area; y += width){
-                    if(board[y] % 2 != 1) res = res | board[y];                 
-                }
-
-                
-                //loop through region
-                for(int y = (i / (width * rootWidth)) * width * rootWidth; y < i + width * rootWidth; y += width){
-                    for(int o = ((i % width) / rootWidth) * rootWidth; o < rootWidth; o++){
-                        if(board[y + o] % 2 != 1) res = res | board[y + o];
-                    }
-
-                }
-                
-                board[i] = board[i] & ~res & 1023; //set the cell to all numbers that do not conflict with known cell
-                if(board[i] - 1 & board[i] - 2 == 0) board[i]--;//set last bit zero when final value reached
-            }
-        }
-        runThrough++;
-        printf("--------------------\n");
-        printIntBoard(board);
-    }
-
-}
-
-int *solve3(int* inputBoard){
-
-
-
-
-    //int cellbytes = ((size / 8) + 1);
-
-    //int area = width * width;
-
-    int board[area];
     int set[width];
     int perm[width - 1];
-    //int regionSetCounter;
-    
-    /*for(int i = 0; i < width - 1; i++){
-        perm[i] = 0;
-    }*/
-
-    for(int i = 0; i < area; i++){
-        if(inputBoard[i] == 0) board[i] = 1022;
-        else intToMap(inputBoard[i], &board[i]);
-    }
-    
-    printf("--------------------\n");
-
-    printIntBoard(board);
 
 
     int runThrough = 0;
@@ -287,11 +139,12 @@ int *solve3(int* inputBoard){
         
         
         //retain unique for columns
+        
         for(int i = 0; i < width; i++){
             for(int y = 0; y < width; y++){
                 set[y] = board[y * width + i];  
             }
-            for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size  
+            for(int y = 1; y < width; y++){ //retain unique for every permutation size  
                 retainUnique(width, perm, y, 0, 0, set);
             }
             for(int y = 0; y < width; y++){
@@ -302,13 +155,12 @@ int *solve3(int* inputBoard){
 
         //retain unique in rows
         for(int i = 0; i < area; i += width){
-            for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size
+            for(int y = 1; y < width; y++){ //retain unique for every permutation size
                 retainUnique(width, perm, y, 0, 0, &board[i]);
             }
         }
 
         //retain unique for region
-        
         for(int i = 0; i < area; i += rootWidth * width){//each vertical region
             for(int j = 0; j < width; j += rootWidth){//each horizontal region
                 
@@ -318,7 +170,7 @@ int *solve3(int* inputBoard){
                     }
                 }
 
-                for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size  
+                for(int y = 1; y < width; y++){ //retain unique for every permutation size  
                     retainUnique(width, perm, y, 0, 0, set);
                 }
 
@@ -329,27 +181,9 @@ int *solve3(int* inputBoard){
                 }
             }
         }
-
-
-
-        //retain unique in colums
-        /*
-        for(int i = 0; i < width; i++){
-            for(int y = 0; y < width; y ++){
-                set[y] = board[i + y * width]; 
-            }
-            for(int y = 1; y < width - 1; y++){ //retain unique for every permutation size
-                retainUnique(width, perm, y, 0, 0, set);
-            }
-        }*/
  
-        runThrough++;
-        printf("--------------------\n");
-        printIntBoard(board);
-        fflush(stdout);
-        
+        runThrough++;    
     }
-    
 }
 
 
@@ -393,47 +227,17 @@ int main(int argc, char **argv) {
 
     
     int intBoard[area];
+    int outBoard[area];
     if(readSudokuFromFile("../examples/test1.csv", intBoard)){
         printIntBoard(intBoard);
     }
 
-    solve3(intBoard);
+    solve3(intBoard, outBoard);
+    mapBoardToIntBoard(outBoard, intBoard, area);
 
-    int setsize = 9;
-    int perm[8] = {3, 4, 5, 7, 8, 0, 0, 0};
-    int permLength = 5;
-    int depth = 5;
-    int start = 0;
-    int set[9] = {512,2,8,1022,1022,1022,32,1022,1022};
-    
-    /*
-    //store each cell as a bits where numbers possible are 1 and numbers impossible are 0
-    //OR cells together to find impossible numbers in a set
-    //
+    printf("------------------------------\n");
 
-
-    //oroight. Probably just use a 2 byte data type to begin with to prevent array fuckery whilst learning
-
-    int c;
-
-    
-    intToMap(1, &c);
-    printf("%d\n",c);
-    printf("%d\n",mapToInt(c));
-    intToMap(2, &c);
-    printf("%d\n",c);
-    printf("%d\n",mapToInt(c));
-    intToMap(3, &c);
-    printf("%d\n",c);
-    printf("%d\n",mapToInt(c));
-    intToMap(4, &c);
-    printf("%d\n",c);
-    printf("%d\n",mapToInt(c));
-    
-
-    intToMap(10, &c);
-    printf("%d\n",c);
-    */
+    printIntBoard(intBoard);
     
     return 0;
 }
