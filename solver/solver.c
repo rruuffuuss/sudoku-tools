@@ -1,5 +1,7 @@
+#define _POSIX_C_SOURCE 199309L
 #include <errno.h>
 #include <stdio.h>
+#include <time.h>
 
 const int rootWidth = 3;
 const int width = rootWidth * rootWidth;
@@ -27,16 +29,16 @@ void printIntBoard(int* board){
     }
 }
 
-void intBoardToMapBoard(int* inputBoard, int* board, int len){
+void intBoardToMapBoard(int* inputBoard, int len){
     for(int i = 0; i < len; i++){
-        if(inputBoard[i] == 0) board[i] = 1022;
-        else intToMap(inputBoard[i], &board[i]);
+        if(inputBoard[i] == 0) inputBoard[i] = 1022;
+        else intToMap(inputBoard[i], &inputBoard[i]);
     }
 }
 
-void mapBoardToIntBoard(int* inputBoard, int* board, int len){
+void mapBoardToIntBoard(int* inputBoard, int len){
     for(int i = 0; i < len; i++){
-        board[i] = mapToInt(inputBoard[i]);
+        inputBoard[i] = mapToInt(inputBoard[i]);
     }
 }
 
@@ -76,8 +78,8 @@ if the number of set bits in permUnique = currentPermLength
 void retainUnique(int setSize, int* perm, int permLength, int depth, int start, int* set){
     if(depth == permLength){
 
-        int permMask[setSize];
-        for(int i = 0; i < setSize; i++) permMask[i] = 0;
+        int permMask[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        //for(int i = 0; i < setSize; i++) permMask[i] = 0;
         for(int i = 0; i < permLength; i++) permMask[perm[i]] = 1;
 
 
@@ -88,9 +90,9 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
         printf("\n");
         */
 
-        int permAnd = 1022;
-        int notPermOr = 0;
-        int permUnique;
+        int permAnd = 1022; //Values possible for all cells in a subset
+        int notPermOr = 0; //Values possbile for any cell not in a subset
+        int permUnique; //values unique to the subset
 
         int first = set[perm[0]];
         int equalCheck = 1;
@@ -105,12 +107,14 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
 
         permUnique = permAnd & ~notPermOr;
 
+        //If a subset of set x of N cells all share N possible values then these values are impossible outside the subset
         if(equalCheck && __builtin_popcount(first) <= permLength){
             for(int i = 0; i < setSize; i++){
                 if(!permMask[i]) set[i] = set[i] & ~first;
             }
         }
 
+        //If a subset of set x of N cells have N unique possible values between them then all other values are impossible
         if(__builtin_popcount(permUnique) == permLength){
             for(int i = 0; i < setSize; i++){
                 if(permMask[i]) set[i] = permUnique;
@@ -120,24 +124,27 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
     } else {
         for(int i = start; i < setSize - (permLength - depth) + 1; i++){
             perm[depth] = i;
-            retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
+            if(__builtin_popcount(set[i]) != 1){
+                retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
+            }
         }
     }
 }
 
-void solve3(int* inputBoard, int* board){
+void solve(int* board){
 
     //int board[area]; 
-    intBoardToMapBoard(inputBoard, board, area);
+    intBoardToMapBoard(board, area);
 
     int set[width];
     int perm[width - 1];
 
 
     int runThrough = 0;
-    while(runThrough < 10){ //prevent infinite loop
+    while(runThrough < 100){ //prevent infinite loop
         
-        
+        //printIntBoard(board);
+        //printf("--------------------\n");
         //retain unique for columns
         
         for(int i = 0; i < width; i++){
@@ -181,13 +188,14 @@ void solve3(int* inputBoard, int* board){
                 }
             }
         }
- 
+        //printIntBoard(board);
         runThrough++;    
     }
+    mapBoardToIntBoard(board, area);
 }
 
 
-int readSudokuFromFile(char *fileName, int* intBoard){
+int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, int number){
     FILE *f;
     f = fopen(fileName, "r");
 
@@ -198,24 +206,39 @@ int readSudokuFromFile(char *fileName, int* intBoard){
         return 0;
    }
 
-    char stringBoardRow[2 * width + 1];
+    
+    if(newLineDelimeted && number == 1){
 
-    int boardPosition = 0;
+        char stringBoardRow[2 * width + 1];
 
-    for(int i = 0; i < width; i++){
-        //printf("test\n");
-        //printf("%d", sizeof(stringBoardRow));
-        fgets(stringBoardRow, sizeof(stringBoardRow), f);
-        for(int y = 0; y < 2 * width - 1; y++){
-            if(stringBoardRow[y] > 47 && stringBoardRow[y] < 58){
-                intBoard[boardPosition++] = stringBoardRow[y] - 48; //subtract 48 from ascii code for int value & increment board pointer
+        int boardPosition = 0;
+
+        for(int i = 0; i < width; i++){
+            fgets(stringBoardRow, sizeof(stringBoardRow), f);
+            for(int y = 0; y < 2 * width - 1; y++){
+                if(stringBoardRow[y] > 47 && stringBoardRow[y] < 58){
+                    intBoards[boardPosition++] = stringBoardRow[y] - 48; //subtract 48 from ascii code for int value & increment board pointer
+                }
             }
         }
-
+        fclose(f);
+        return 1;
+    } else if (!newLineDelimeted){
+        char puzzle[area + 1];
+        for(int i = 0; i < number * area; i += area){
+            fgets(puzzle, sizeof(puzzle), f);
+            for(int y = 0; y < area; y++){
+                if(puzzle[y] > 47 && puzzle[y] < 58){
+                    intBoards[i + y] = puzzle[y] - 48; //subtract 48 from ascii code for int value & increment board pointer
+                }
+            }
+        }
+        fclose(f);
+        return 1;
     }
 
     fclose(f);
-    return 1;
+    return 0;
 }
 
 
@@ -228,17 +251,36 @@ int main(int argc, char **argv) {
     
     int intBoard[area];
     int outBoard[area];
-    if(readSudokuFromFile("../examples/test1.csv", intBoard)){
+    //if(readSudokusFromFile("../examples/test1.csv", intBoard, 1, 1)){
+    if(readSudokusFromFile("../examples/test2.csv", intBoard, 0, 1)){
         printIntBoard(intBoard);
     }
 
-    solve3(intBoard, outBoard);
-    mapBoardToIntBoard(outBoard, intBoard, area);
+    struct timespec start, end;
+
+    // Get the start time
+    if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
+        perror("clock_gettime");
+        return 1;
+    }
+
+    // Call the function to measure
+    solve(intBoard);
+
+    // Get the end time
+    if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
+        perror("clock_gettime");
+        return 1;
+    }
+
+    // Calculate the elapsed time in nanoseconds
+    long elapsed_ns = (end.tv_nsec - start.tv_nsec);
+    
 
     printf("------------------------------\n");
 
     printIntBoard(intBoard);
-    
+    printf("The function took %ld nanoseconds to execute.\n", elapsed_ns);
     return 0;
 }
 
