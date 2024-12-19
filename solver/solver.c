@@ -7,6 +7,12 @@ const int rootWidth = 3;
 const int width = rootWidth * rootWidth;
 const int area = width * width;
 
+const int permutationWidth = 4;
+
+const int num_of_puzzles = 10000;
+
+const char puzzlePath[] = "../examples/test2.csv";
+
 void intToMap(int n, int *c){
     *c = 1 << (n);
 }
@@ -124,14 +130,16 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
     } else {
         for(int i = start; i < setSize - (permLength - depth) + 1; i++){
             perm[depth] = i;
-            if(__builtin_popcount(set[i]) != 1){
-                retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
+            if(set[i] != 1022){
+                (setSize, perm, permLength, depth + 1, i + 1, set);
             }
+            retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
+            
         }
     }
 }
 
-void solve(int* board){
+int solve(int* board){
 
     //int board[area]; 
     intBoardToMapBoard(board, area);
@@ -139,9 +147,11 @@ void solve(int* board){
     int set[width];
     int perm[width - 1];
 
+    int rowSum = 0;
+    int lastRowSum = 0;
 
     int runThrough = 0;
-    while(runThrough < 100){ //prevent infinite loop
+    while(rowSum != 9198){ //prevent infinite loop
         
         //printIntBoard(board);
         //printf("--------------------\n");
@@ -151,7 +161,7 @@ void solve(int* board){
             for(int y = 0; y < width; y++){
                 set[y] = board[y * width + i];  
             }
-            for(int y = 1; y < width; y++){ //retain unique for every permutation size  
+            for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size  
                 retainUnique(width, perm, y, 0, 0, set);
             }
             for(int y = 0; y < width; y++){
@@ -162,7 +172,7 @@ void solve(int* board){
 
         //retain unique in rows
         for(int i = 0; i < area; i += width){
-            for(int y = 1; y < width; y++){ //retain unique for every permutation size
+            for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size
                 retainUnique(width, perm, y, 0, 0, &board[i]);
             }
         }
@@ -177,7 +187,7 @@ void solve(int* board){
                     }
                 }
 
-                for(int y = 1; y < width; y++){ //retain unique for every permutation size  
+                for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size  
                     retainUnique(width, perm, y, 0, 0, set);
                 }
 
@@ -188,10 +198,19 @@ void solve(int* board){
                 }
             }
         }
+        
+        rowSum = 0;
         //printIntBoard(board);
-        runThrough++;    
+        for(int i = 0; i < area; i++) rowSum += board[i];
+        if(lastRowSum == rowSum){
+            //printf("Unable to solve, multiple solutions exist\n");
+            //mapBoardToIntBoard(board,area);
+            return 0;
+        }
+        lastRowSum = rowSum;    
     }
     mapBoardToIntBoard(board, area);
+    return 1;
 }
 
 
@@ -224,7 +243,7 @@ int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, in
         fclose(f);
         return 1;
     } else if (!newLineDelimeted){
-        char puzzle[area + 1];
+        char puzzle[area + 2]; //+ 2 for null char and EOL
         for(int i = 0; i < number * area; i += area){
             fgets(puzzle, sizeof(puzzle), f);
             for(int y = 0; y < area; y++){
@@ -248,12 +267,18 @@ int main(int argc, char **argv) {
 
     //permGenerate(10, perm, 3, 0, 0);
 
-    
-    int intBoard[area];
+    int successNo = 0;
+    int intBoard[area * num_of_puzzles];
     int outBoard[area];
     //if(readSudokusFromFile("../examples/test1.csv", intBoard, 1, 1)){
-    if(readSudokusFromFile("../examples/test2.csv", intBoard, 0, 1)){
-        printIntBoard(intBoard);
+    if(readSudokusFromFile(puzzlePath, intBoard, 0, num_of_puzzles)){
+        /*for(int i = 0; i < num_of_puzzles; i++){
+            printf("------------------------------\n");
+            printf("Sudoku number %d:\n", i);
+            printIntBoard(&intBoard[i * area]);
+        }*/
+
+       printf("loading successful\n");
     }
 
     struct timespec start, end;
@@ -264,8 +289,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Call the function to measure
-    solve(intBoard);
+
+    for(int i = 0; i < num_of_puzzles; i++){
+        successNo += solve(&intBoard[i * area]);
+    }
 
     // Get the end time
     if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
@@ -274,13 +301,19 @@ int main(int argc, char **argv) {
     }
 
     // Calculate the elapsed time in nanoseconds
-    long elapsed_ns = (end.tv_nsec - start.tv_nsec);
+    long long elapsed_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
     
 
     printf("------------------------------\n");
 
-    printIntBoard(intBoard);
-    printf("The function took %ld nanoseconds to execute.\n", elapsed_ns);
+    /*for(int i = 0; i < num_of_puzzles; i++){
+            printf("------------------------------\n");
+            printf("Sudoku number %d:\n", i);
+            printIntBoard(&intBoard[i * area]);
+        }*/
+    printf("The function took %ld microseconds to execute.\n", elapsed_us);
+    printf("This is an average of %d microseconds per puzzle\n", elapsed_us / num_of_puzzles);
+    printf("%d puzzles were solved successfully\n", successNo);
     return 0;
 }
 
