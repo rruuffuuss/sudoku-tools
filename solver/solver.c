@@ -3,11 +3,19 @@
 #include <stdio.h>
 #include <time.h>
 
+/*
+TODO
+1. find solutions to the 10k and compare results after each test to ensure correct solutions are being found
+2. experiment with permutation Certainty to find optimal number of possible values to be considered in a permutation
+*/
+
+
 const int rootWidth = 3;
 const int width = rootWidth * rootWidth;
 const int area = width * width;
 
-const int permutationWidth = 4;
+const int permutationWidth = 7;
+const int permutationCertainty = 4; //number of possible values for permutation to be considered
 
 const int num_of_puzzles = 10000;
 
@@ -77,7 +85,7 @@ permUnique = permAnd & ~notPermOr
 
 if the number of set bits in permUnique = currentPermLength
     set all cells in current permutation to permUnique
-    set all cells outside the current permutation to value AND NOT permUnique
+    //dont do this. It is impossible for these cells to contain permUnique //set all cells outside the current permutation to value AND NOT permUnique
 */
 
 
@@ -113,27 +121,32 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
 
         permUnique = permAnd & ~notPermOr;
 
-        //If a subset of set x of N cells all share N possible values then these values are impossible outside the subset
+        /*
+        If a subset of set x of N cells all share N possible values then these values are impossible outside the subset
+        e.g. if 3 values are the only possible values in 3 cells, no other cell can contain these values
+        */
         if(equalCheck && __builtin_popcount(first) <= permLength){
             for(int i = 0; i < setSize; i++){
                 if(!permMask[i]) set[i] = set[i] & ~first;
             }
         }
 
-        //If a subset of set x of N cells have N unique possible values between them then all other values are impossible
+        /*
+        If a subset of set x of N cells have N unique possible values between them then all other values are impossible
+        e.g. if 3 values only appear in 3 cells, then these cells cannot contain anything other than these 3 values         
+        */
         if(__builtin_popcount(permUnique) == permLength){
             for(int i = 0; i < setSize; i++){
                 if(permMask[i]) set[i] = permUnique;
-                else set[i] = set[i] & ~permUnique;
             }
         }
     } else {
         for(int i = start; i < setSize - (permLength - depth) + 1; i++){
             perm[depth] = i;
-            if(set[i] != 1022){
-                (setSize, perm, permLength, depth + 1, i + 1, set);
+            int x = set[i];
+            if(__builtin_popcount(set[i]) <= permutationCertainty ){
+                retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
             }
-            retainUnique(setSize, perm, permLength, depth + 1, i + 1, set);
             
         }
     }
