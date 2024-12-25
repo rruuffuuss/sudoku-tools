@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 /*
 TODO
@@ -17,10 +18,10 @@ const int area = width * width;
 int permutationWidth = 8; //max size of a permutation
 int permutationCertainty = 8; //max number of potential values for any given cell for a permutation to be considered 
 
-const int num_of_puzzles = 10000;
+int num_of_puzzles = 10000;
 
-const char puzzlePath[] = "../examples/test5.csv";
-const char solutionPath[] = "../examples/test5solutions.csv";
+char puzzlePath[50] = "../examples/test5.csv";
+char solutionPath[50] = "../examples/test5solutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -277,19 +278,26 @@ int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, in
 
 int main(int argc, char **argv) {
 
-    if(argc == 3){
-        //sscanf(*argv[1], "%d", permutationWidth);
-        //sscanf(*argv[2], "%d", permutationCertainty);
+    if(argc >= 3){
+        //sscanf(*argv[1], "%d", &permutationWidth);
+        //sscanf(*argv[2], "%d", &permutationCertainty);
         permutationWidth = *argv[1] - 48;
         permutationCertainty = *argv[2] - 48;
 
         if(permutationWidth < 0 || permutationWidth > 10 || permutationCertainty < 0 || permutationCertainty > 10){
             printf("permutation width and certainty must be between 1 and 9 inclusive\n");
-            return 0;
+            return 1;
         }
     }
+    if(argc >= 5){
+        strcpy(puzzlePath, argv[3]);
+        strcpy(solutionPath, argv[4]);
+    }
+    if(argc >= 6){
+        sscanf(argv[5], "%d", &num_of_puzzles);
+    }
 
-    printf("Hello World\n"); 
+    //printf("Hello World\n"); 
 
     //permGenerate(10, perm, 3, 0, 0);
 
@@ -303,8 +311,11 @@ int main(int argc, char **argv) {
             printf("Sudoku number %d:\n", i);
             printIntBoard(&intBoard[i * area]);
         }*/
+       //printf("loading successful\n");
 
-       printf("loading successful\n");
+    } else {
+        printf("loading unsuccessful\n");
+        return 1;
     }
 
     struct timespec start, end;
@@ -317,7 +328,7 @@ int main(int argc, char **argv) {
 
 
     for(int i = 0; i < num_of_puzzles; i++){
-        successNo += solve(&intBoard[i * area]);
+        solve(&intBoard[i * area]);
     }
 
     // Get the end time
@@ -328,9 +339,6 @@ int main(int argc, char **argv) {
 
     // Calculate the elapsed time in nanoseconds
     long long elapsed_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-    
-
-    printf("------------------------------\n");
 
     /*for(int i = 0; i < num_of_puzzles; i++){
             printf("------------------------------\n");
@@ -341,7 +349,7 @@ int main(int argc, char **argv) {
     printf("This is an average of %d microseconds per puzzle\n", elapsed_us / num_of_puzzles);
     printf("a solution was found for %d puzzles\n", successNo);
     */
-   
+
     successNo = 0;
     int allMatch;
     if(readSudokusFromFile(solutionPath, solBoard, 0, num_of_puzzles)){
@@ -352,7 +360,10 @@ int main(int argc, char **argv) {
             }
             successNo += allMatch;
         }
-        printf("%d puzzles were solved correctly \n", successNo);
+        printf("%d ", permutationWidth);
+        printf("%d ", permutationCertainty);
+        printf("%d ", successNo);
+        printf("%d ", elapsed_us);
     }
     return 0;
 }
