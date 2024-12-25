@@ -14,12 +14,13 @@ const int rootWidth = 3;
 const int width = rootWidth * rootWidth;
 const int area = width * width;
 
-const int permutationWidth = 7;
-const int permutationCertainty = 4; //number of possible values for permutation to be considered
+int permutationWidth = 8; //max size of a permutation
+int permutationCertainty = 8; //max number of potential values for any given cell for a permutation to be considered 
 
 const int num_of_puzzles = 10000;
 
-const char puzzlePath[] = "../examples/test2.csv";
+const char puzzlePath[] = "../examples/test5.csv";
+const char solutionPath[] = "../examples/test5solutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -276,13 +277,25 @@ int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, in
 
 int main(int argc, char **argv) {
 
+    if(argc == 3){
+        //sscanf(*argv[1], "%d", permutationWidth);
+        //sscanf(*argv[2], "%d", permutationCertainty);
+        permutationWidth = *argv[1] - 48;
+        permutationCertainty = *argv[2] - 48;
+
+        if(permutationWidth < 0 || permutationWidth > 10 || permutationCertainty < 0 || permutationCertainty > 10){
+            printf("permutation width and certainty must be between 1 and 9 inclusive\n");
+            return 0;
+        }
+    }
+
     printf("Hello World\n"); 
 
     //permGenerate(10, perm, 3, 0, 0);
 
     int successNo = 0;
     int intBoard[area * num_of_puzzles];
-    int outBoard[area];
+    int solBoard[area * num_of_puzzles];
     //if(readSudokusFromFile("../examples/test1.csv", intBoard, 1, 1)){
     if(readSudokusFromFile(puzzlePath, intBoard, 0, num_of_puzzles)){
         /*for(int i = 0; i < num_of_puzzles; i++){
@@ -323,10 +336,24 @@ int main(int argc, char **argv) {
             printf("------------------------------\n");
             printf("Sudoku number %d:\n", i);
             printIntBoard(&intBoard[i * area]);
-        }*/
+        }
     printf("The function took %ld microseconds to execute.\n", elapsed_us);
     printf("This is an average of %d microseconds per puzzle\n", elapsed_us / num_of_puzzles);
-    printf("%d puzzles were solved successfully\n", successNo);
+    printf("a solution was found for %d puzzles\n", successNo);
+    */
+   
+    successNo = 0;
+    int allMatch;
+    if(readSudokusFromFile(solutionPath, solBoard, 0, num_of_puzzles)){
+        for(int i = 0; i < num_of_puzzles; i++){
+            allMatch = 1;
+            for(int y = 0; y < area; y++){
+                if(solBoard[i * area + y] != intBoard[i * area + y]) allMatch = 0;
+            }
+            successNo += allMatch;
+        }
+        printf("%d puzzles were solved correctly \n", successNo);
+    }
     return 0;
 }
 
