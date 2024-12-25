@@ -8,7 +8,7 @@ TARGET = $(BUILD_DIR)/solver
 
 # Default target
 .PHONY: all
-all: $(TARGET) run
+all: $(TARGET) 
 
 # Compile the program
 $(TARGET): $(SRC)
