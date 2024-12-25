@@ -1,4 +1,6 @@
-import subprocess;
+import subprocess
+import numpy as np
+import pandas as pd
 
 path = "./build/solver"
 make_command = ["make",  "-C", "./solver"]
@@ -8,7 +10,7 @@ permutation_certainty_max = 9
 
 test_filepath = "./examples/test5.csv"
 solution_filepath = "./examples/test5solutions.csv"
-test_number = 100
+test_number = 1000
 
 results = [None] * (permutation_width_max - 1) * (permutation_certainty_max - 1) 
 
@@ -34,13 +36,22 @@ for i in range(1, permutation_certainty_max):
             print("test execution failed")
             print(test_process.stdout.readline())
         else: 
-            results[(i * (1 - permutation_width_max) + y)] = test_process.stdout.readline().split(' ')[:-1]
+            results[(i * (1 - permutation_width_max) + y)] = [int(r) for r in test_process.stdout.readline().split(' ')[:-1]]
 
 # Close the streams
 
-print("Output:")
-print(results)
+# print("Output:")
+# print(results)
 
 test_process.stdin.close()
 test_process.stdout.close()
 test_process.stderr.close()
+
+
+df = pd.DataFrame(results, columns= ["width", "certainty", "successNo", "time"])
+
+df = df[df['successNo'] > float(df['successNo'].max()) * 0.9]
+
+df = df.sort_values(by=['time'])
+df.sort_index()
+print(df)
