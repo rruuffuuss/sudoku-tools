@@ -6,8 +6,9 @@
 
 /*
 TODO
-1. find solutions to the 10k and compare results after each test to ensure correct solutions are being found
-2. experiment with permutation Certainty to find optimal number of possible values to be considered in a permutation
+1. work out why there is large discrepancy in time taken despite the fact that permutation increment logic should ensure all puzzles are solved at lowest permutation widths
+-> possibly the discrepancy may be a result of high permutation width runs wasting a lot of time on unsolveable problems
+2.confirm that puzzles solver fails to solve actually all have multiple solutions, or if a brute force method needs to be implemented
 */
 
 
@@ -353,7 +354,7 @@ int main(int argc, char **argv) {
     printf("a solution was found for %d puzzles\n", successNo);
     */
 
-    //successNo = 0;
+    successNo = 0;
     int allMatch;
     if(readSudokusFromFile(solutionPath, solBoard, 0, num_of_puzzles)){
         for(int i = 0; i < num_of_puzzles; i++){
@@ -361,12 +362,16 @@ int main(int argc, char **argv) {
             for(int y = 0; y < area; y++){
                 if(solBoard[i * area + y] != intBoard[i * area + y]) allMatch = 0;
             }
-            //successNo += allMatch;
+            //if(!allMatch) printf("%d,", i);
+            successNo += allMatch;
         }
+        //printf("\n");
         printf("%d ", permutationWidth);
         printf("%d ", permutationCertainty);
         printf("%d ", successNo);
         printf("%d", elapsed_us);
+        
+       
     }
     return 0;
 }
