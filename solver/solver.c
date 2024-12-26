@@ -161,6 +161,7 @@ int solve(int* board){
 
     int set[width];
     int perm[width - 1];
+    int currentWidth = 1;
 
     int rowSum = 0;
     int lastRowSum = 0;
@@ -176,7 +177,7 @@ int solve(int* board){
             for(int y = 0; y < width; y++){
                 set[y] = board[y * width + i];  
             }
-            for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size  
+            for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size  
                 retainUnique(width, perm, y, 0, 0, set);
             }
             for(int y = 0; y < width; y++){
@@ -187,7 +188,7 @@ int solve(int* board){
 
         //retain unique in rows
         for(int i = 0; i < area; i += width){
-            for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size
+            for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size
                 retainUnique(width, perm, y, 0, 0, &board[i]);
             }
         }
@@ -202,7 +203,7 @@ int solve(int* board){
                     }
                 }
 
-                for(int y = 1; y < permutationWidth; y++){ //retain unique for every permutation size  
+                for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size  
                     retainUnique(width, perm, y, 0, 0, set);
                 }
 
@@ -220,7 +221,12 @@ int solve(int* board){
         if(lastRowSum == rowSum){
             //printf("Unable to solve, multiple solutions exist\n");
             //mapBoardToIntBoard(board,area);
-            return 0;
+            currentWidth++;
+            if(currentWidth > permutationWidth){
+                return 0;
+            }
+        } else {
+            currentWidth = 1;
         }
         lastRowSum = rowSum;    
     }
@@ -277,6 +283,12 @@ int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, in
 
 
 int main(int argc, char **argv) {
+    struct timespec start, end;
+    // Get the start time
+    if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
+        perror("clock_gettime");
+        return 1;
+    }
 
     if(argc >= 3){
         //sscanf(*argv[1], "%d", &permutationWidth);
@@ -318,17 +330,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    struct timespec start, end;
-
-    // Get the start time
-    if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
-        perror("clock_gettime");
-        return 1;
-    }
-
-
     for(int i = 0; i < num_of_puzzles; i++){
-        solve(&intBoard[i * area]);
+        successNo += solve(&intBoard[i * area]);
     }
 
     // Get the end time
@@ -350,7 +353,7 @@ int main(int argc, char **argv) {
     printf("a solution was found for %d puzzles\n", successNo);
     */
 
-    successNo = 0;
+    //successNo = 0;
     int allMatch;
     if(readSudokusFromFile(solutionPath, solBoard, 0, num_of_puzzles)){
         for(int i = 0; i < num_of_puzzles; i++){
@@ -358,12 +361,12 @@ int main(int argc, char **argv) {
             for(int y = 0; y < area; y++){
                 if(solBoard[i * area + y] != intBoard[i * area + y]) allMatch = 0;
             }
-            successNo += allMatch;
+            //successNo += allMatch;
         }
         printf("%d ", permutationWidth);
         printf("%d ", permutationCertainty);
         printf("%d ", successNo);
-        printf("%d ", elapsed_us);
+        printf("%d", elapsed_us);
     }
     return 0;
 }
