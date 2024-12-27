@@ -5,11 +5,11 @@ import pandas as pd
 path = "./build/solver"
 make_command = ["make",  "-C", "./solver"]
 
-permutation_width_max = 9
-permutation_certainty_max = 9
+permutation_width_max = 10
+permutation_certainty_max = 10
 
-test_filepath = "./examples/allSolveableTest.csv"
-solution_filepath = "./examples/allSolveableTestSolutions.csv"
+test_filepath = "./examples/allUnsolveableTest.csv"
+solution_filepath = "./examples/allUnsolveableTestSolutions.csv"
 test_number = 5000
 
 results = [None] * (permutation_width_max - 1) * (permutation_certainty_max - 1) 
