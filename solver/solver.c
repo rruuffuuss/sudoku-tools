@@ -6,9 +6,16 @@
 
 /*
 TODO
-1. work out why there is large discrepancy in time taken despite the fact that permutation increment logic should ensure all puzzles are solved at lowest permutation widths
--> possibly the discrepancy may be a result of high permutation width runs wasting a lot of time on unsolveable problems
-2.confirm that puzzles solver fails to solve actually all have multiple solutions, or if a brute force method needs to be implemented
+implement a version of retainunique that does grid analysis (X wings & potentially swordfish) in all intersections of rows and columns 
+"If a candidate k is possible in the interesection of n rows and n
+columns but is not possible elsewhere in those n rows, then it is also not
+possible elsewhere in those n columns."
+
+will need 2 rows and 2 columns in a permutation, with each being incremented once the precursor has completed a full cycle
+
+in the base case check if possible values do not appear outside the intersection for either the rows or columns
+if a possible value only appears in intersecting cells in a row, remove it from all non intersecting cells in a column
+if a possible value only appears in intersecting cells in a column, remove it from all non intersecting cells in a row
 */
 
 
@@ -19,10 +26,10 @@ const int area = width * width;
 int permutationWidth = 8; //max size of a permutation
 int permutationCertainty = 8; //max number of potential values for any given cell for a permutation to be considered 
 
-int num_of_puzzles = 10000;
+int num_of_puzzles = 4;
 
-char puzzlePath[50] = "../examples/test5.csv";
-char solutionPath[50] = "../examples/test5solutions.csv";
+char puzzlePath[50] = "../examples/allUnsolveableTest.csv";
+char solutionPath[50] = "../examples/allUnsolveableTestSolutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -170,8 +177,8 @@ int solve(int* board){
     int runThrough = 0;
     while(rowSum != 9198){ //prevent infinite loop
         
-        //printIntBoard(board);
-        //printf("--------------------\n");
+        printIntBoard(board);
+        printf("--------------------\n");
         //retain unique for columns
         
         for(int i = 0; i < width; i++){
