@@ -26,7 +26,7 @@ const int area = width * width;
 int permutationWidth = 8; //max size of a permutation
 int permutationCertainty = 8; //max number of potential values for any given cell for a permutation to be considered 
 
-int num_of_puzzles = 4;
+int num_of_puzzles = 500;
 
 char puzzlePath[50] = "../examples/allUnsolveableTest.csv";
 char solutionPath[50] = "../examples/allUnsolveableTestSolutions.csv";
@@ -66,6 +66,133 @@ void mapBoardToIntBoard(int* inputBoard, int len){
     }
 }
 
+void CheckSwordFish(int* board){
+
+    //all row combinations
+    for(int row1 = 0; row1 < area - 2 * width; row1 += width){
+        for(int row2 = row1 + width; row2 < area - width; row2 += width){
+            for(int row3 = row2 + width; row3 < area; row3 += width){
+            
+                //all column combinations
+                for(int col1 = 0; col1 < width - 2; col1++){
+                    for(int col2 = col1 + 1; col2 < width - 1; col2++){
+                        for(int col3 = col2 + 1; col3 < width; col3++){
+
+                            int row1Comp = 0, row2Comp = 0, row3Comp = 0, col1Comp = 0, col2Comp = 0, col3Comp = 0;
+                            int intersection = 1022;
+
+                            //loop through rows
+                            for(int i = 0; i < width; i++){
+                                if(i == col1 || i == col2 || i == col3) {
+                                    intersection = intersection & board[row1 + i] & board[row2 + i] & board[row3 + i];
+                                }
+                                else {
+                                    row1Comp = row1Comp | board[row1 + i];
+                                    row2Comp = row2Comp | board[row2 + i];
+                                    row3Comp = row3Comp | board[row3 + i];
+                                }
+                            }
+                            
+                            //loop through columns
+                            for(int i = 0; i < area; i += width){
+                                if(i != row1 && i != row2){
+                                    col1Comp = col1Comp | board[i + col1];
+                                    col2Comp = col2Comp | board[i + col2];
+                                    col3Comp = col3Comp | board[i + col3];
+                                }
+                            }
+
+                            int colUnique = intersection & ~(col1Comp | col2Comp | col3Comp);
+                            int rowUnique = intersection & ~(row1Comp | row2Comp | row3Comp);
+
+                            if(colUnique != 0){
+                                //remove colUnique from rows
+                                for(int i = 0; i < width; i++){
+                                    if(i != col1 && i != col2) {
+                                        board[row1 + i] = board[row1 + i] & ~colUnique;
+                                        board[row2 + i] = board[row2 + i] & ~colUnique;
+                                        board[row3 + i] = board[row3 + i] & ~colUnique;
+                                    }
+                                }
+                            }
+                            if(rowUnique != 0){
+                                //remove rowUnique from cols
+                                for(int i = 0; i < area; i += width){
+                                    if(i != row1 && i != row2){
+                                        board[i + col1] = board[i + col1] & ~rowUnique;
+                                        board[i + col2] = board[i + col2] & ~rowUnique;
+                                        board[i + col3] = board[i + col3] & ~rowUnique;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void CheckXwing(int* board){
+
+    //all row combinations
+    for(int row1 = 0; row1 < area - width; row1 += width){
+        for(int row2 = row1 + width; row2 < area; row2 += width){
+            
+            //all column combinations
+            for(int col1 = 0; col1 < width - 1; col1++){
+                for(int col2 = col1 + 1; col2 < width; col2++){
+
+                    int row1Comp = 0, row2Comp = 0, col1Comp = 0, col2Comp = 0;
+                    int intersection = 1022;
+
+                    //loop through rows
+                    for(int i = 0; i < width; i++){
+                        if(i == col1 || i == col2) {
+                            intersection = intersection & board[row1 + i] & board[row2 + i];
+                        }
+                        else {
+                            row1Comp = row1Comp | board[row1 + i];
+                            row2Comp = row2Comp | board[row2 + i];
+                        }
+                    }
+                    
+                    //loop through columns
+                    for(int i = 0; i < area; i += width){
+                        if(i != row1 && i != row2){
+                            col1Comp = col1Comp | board[i + col1];
+                            col2Comp = col2Comp | board[i + col2];
+                        }
+                    }
+
+                    int colUnique = intersection & ~(col1Comp | col2Comp);
+                    int rowUnique = intersection & ~(row1Comp | row2Comp);
+
+                    if(colUnique != 0){
+                        //remove colUnique from rows
+                        for(int i = 0; i < width; i++){
+                            if(i != col1 && i != col2) {
+                                board[row1 + i] = board[row1 + i] & ~colUnique;
+                                board[row2 + i] = board[row2 + i] & ~colUnique;
+                            }
+                        }
+                    }
+                    if(rowUnique != 0){
+                        //remove rowUnique from cols
+                        for(int i = 0; i < area; i += width){
+                            if(i != row1 && i != row2){
+                                board[i + col1] = board[i + col1] & ~rowUnique;
+                                board[i + col2] = board[i + col2] & ~rowUnique;
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+}
+
 /*
 set of cells x
 within a set x each value must appear once
@@ -97,7 +224,6 @@ if the number of set bits in permUnique = currentPermLength
     set all cells in current permutation to permUnique
     //dont do this. It is impossible for these cells to contain permUnique //set all cells outside the current permutation to value AND NOT permUnique
 */
-
 
 void retainUnique(int setSize, int* perm, int permLength, int depth, int start, int* set){
     if(depth == permLength){
@@ -177,8 +303,8 @@ int solve(int* board){
     int runThrough = 0;
     while(rowSum != 9198){ //prevent infinite loop
         
-        printIntBoard(board);
-        printf("--------------------\n");
+        //printIntBoard(board);
+        //printf("--------------------\n");
         //retain unique for columns
         
         for(int i = 0; i < width; i++){
@@ -231,7 +357,19 @@ int solve(int* board){
             //mapBoardToIntBoard(board,area);
             currentWidth++;
             if(currentWidth > permutationWidth){
-                return 0;
+                CheckXwing(board);
+                //CheckSwordFish(board);
+                lastRowSum = rowSum;
+                rowSum = 0;
+                for(int i = 0; i < area; i++) rowSum += board[i];
+
+                if(lastRowSum == rowSum){
+                    printIntBoard(board);
+                    printf("--------------------\n");
+                    return 0;
+                } else {
+                    currentWidth = 1;
+                }
             }
         } else {
             currentWidth = 1;
