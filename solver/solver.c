@@ -6,16 +6,7 @@
 
 /*
 TODO
-implement a version of retainunique that does grid analysis (X wings & potentially swordfish) in all intersections of rows and columns 
-"If a candidate k is possible in the interesection of n rows and n
-columns but is not possible elsewhere in those n rows, then it is also not
-possible elsewhere in those n columns."
-
-will need 2 rows and 2 columns in a permutation, with each being incremented once the precursor has completed a full cycle
-
-in the base case check if possible values do not appear outside the intersection for either the rows or columns
-if a possible value only appears in intersecting cells in a row, remove it from all non intersecting cells in a column
-if a possible value only appears in intersecting cells in a column, remove it from all non intersecting cells in a row
+possibly treat permutation certainty like width and increment the certainty used depending on the success/failure of previous runs
 */
 
 
@@ -23,13 +14,13 @@ const int rootWidth = 3;
 const int width = rootWidth * rootWidth;
 const int area = width * width;
 
-int permutationWidth = 8; //max size of a permutation
-int permutationCertainty = 8; //max number of potential values for any given cell for a permutation to be considered 
+int permutationWidth = 4; //max size of a permutation
+int permutationCertainty = 6; //max number of potential values for any given cell for a permutation to be considered 
 
 int num_of_puzzles = 500;
 
-char puzzlePath[50] = "../examples/allSolveableTest.csv";
-char solutionPath[50] = "../examples/allSolveableTestSolutions.csv";
+char puzzlePath[50] = "../examples/allUnsolveableTest.csv";
+char solutionPath[50] = "../examples/allUnsolveableTestSolutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -291,7 +282,7 @@ void retainUnique(int setSize, int* perm, int permLength, int depth, int start, 
 int solve(int* board){
 
     //int board[area]; 
-    intBoardToMapBoard(board, area);
+    
 
     int set[width];
     int perm[width - 1];
@@ -390,6 +381,7 @@ int solve(int* board){
                         childBoard[currentCell] = v;
 
                         if(solve(childBoard)){
+                            memcpy(board, childBoard, sizeof(int) * area);
                             return 1;
                             childSolve = 1;
                         } else {
@@ -401,6 +393,11 @@ int solve(int* board){
                         }
                     } else {
                         currentCell++;
+                        if(currentCell >= area){
+                            currentCell = 0;
+                            candidateNo++;
+                            if(candidateNo > 7) return 0;
+                        }
                     }
                 }
                                 
@@ -511,6 +508,7 @@ int main(int argc, char **argv) {
     }
 
     for(int i = 0; i < num_of_puzzles; i++){
+        intBoardToMapBoard(&intBoard[i * area], area);
         successNo += solve(&intBoard[i * area]);
     }
 
