@@ -28,8 +28,8 @@ int permutationCertainty = 8; //max number of potential values for any given cel
 
 int num_of_puzzles = 500;
 
-char puzzlePath[50] = "../examples/allUnsolveableTest.csv";
-char solutionPath[50] = "../examples/allUnsolveableTestSolutions.csv";
+char puzzlePath[50] = "../examples/allSolveableTest.csv";
+char solutionPath[50] = "../examples/allSolveableTestSolutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -95,7 +95,7 @@ void CheckSwordFish(int* board){
                             
                             //loop through columns
                             for(int i = 0; i < area; i += width){
-                                if(i != row1 && i != row2){
+                                if(i != row1 && i != row2 && i != row3){
                                     col1Comp = col1Comp | board[i + col1];
                                     col2Comp = col2Comp | board[i + col2];
                                     col3Comp = col3Comp | board[i + col3];
@@ -108,7 +108,7 @@ void CheckSwordFish(int* board){
                             if(colUnique != 0){
                                 //remove colUnique from rows
                                 for(int i = 0; i < width; i++){
-                                    if(i != col1 && i != col2) {
+                                    if(i != col1 && i != col2 && i != col3) {
                                         board[row1 + i] = board[row1 + i] & ~colUnique;
                                         board[row2 + i] = board[row2 + i] & ~colUnique;
                                         board[row3 + i] = board[row3 + i] & ~colUnique;
@@ -118,7 +118,7 @@ void CheckSwordFish(int* board){
                             if(rowUnique != 0){
                                 //remove rowUnique from cols
                                 for(int i = 0; i < area; i += width){
-                                    if(i != row1 && i != row2){
+                                    if(i != row1 && i != row2 && i != row3){
                                         board[i + col1] = board[i + col1] & ~rowUnique;
                                         board[i + col2] = board[i + col2] & ~rowUnique;
                                         board[i + col3] = board[i + col3] & ~rowUnique;
@@ -306,14 +306,13 @@ int solve(int* board){
         //printIntBoard(board);
         //printf("--------------------\n");
         //retain unique for columns
-        
+
+       
         for(int i = 0; i < width; i++){
             for(int y = 0; y < width; y++){
                 set[y] = board[y * width + i];  
             }
-            for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size  
-                retainUnique(width, perm, y, 0, 0, set);
-            }
+            retainUnique(width, perm, currentWidth, 0, 0, set);
             for(int y = 0; y < width; y++){
                 board[y * width + i] = set[y];  
             }
@@ -322,9 +321,7 @@ int solve(int* board){
 
         //retain unique in rows
         for(int i = 0; i < area; i += width){
-            for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size
-                retainUnique(width, perm, y, 0, 0, &board[i]);
-            }
+            retainUnique(width, perm, currentWidth, 0, 0, &board[i]);
         }
 
         //retain unique for region
@@ -337,9 +334,8 @@ int solve(int* board){
                     }
                 }
 
-                for(int y = 1; y < currentWidth; y++){ //retain unique for every permutation size  
-                    retainUnique(width, perm, y, 0, 0, set);
-                }
+                retainUnique(width, perm, currentWidth, 0, 0, set);
+                
 
                 for(int y = 0, regionSetCounter = 0; y < rootWidth * width; y += width){//each row within a region
                     for(int o = 0; o < rootWidth; o++, regionSetCounter++){//each column within a region
@@ -349,27 +345,65 @@ int solve(int* board){
             }
         }
         
+
         rowSum = 0;
         //printIntBoard(board);
-        for(int i = 0; i < area; i++) rowSum += board[i];
+        for(int i = 0; i < area; i++) {
+            if(board[i] == 0) return 0; //if there are no candidates for a cell, a solution does not exist
+            rowSum += board[i];
+        }
         if(lastRowSum == rowSum){
             //printf("Unable to solve, multiple solutions exist\n");
             //mapBoardToIntBoard(board,area);
             currentWidth++;
-            if(currentWidth > permutationWidth){
-                CheckXwing(board);
-                //CheckSwordFish(board);
-                lastRowSum = rowSum;
-                rowSum = 0;
-                for(int i = 0; i < area; i++) rowSum += board[i];
+            if(currentWidth > permutationWidth ){
 
-                if(lastRowSum == rowSum){
-                    printIntBoard(board);
-                    printf("--------------------\n");
-                    return 0;
-                } else {
-                    currentWidth = 1;
+                int candidateNo = 2;
+                int currentCell = 0;
+                int currentBit = 0;
+                int childSolve = 0;
+
+                while (!childSolve)
+                {
+                    
+                    if(__builtin_popcount(board[currentCell]) == candidateNo){
+                        int childBoard[area * num_of_puzzles];
+                        memcpy(childBoard, board, sizeof(int) * area);
+                        
+                        int v;
+                        int v2 = childBoard[currentCell];
+
+                        //remove the most significant bit current bit number of times
+                        for(int i = 0; i < currentBit + 1; i++) {
+                            v = v2;
+                            v |= v >> 1; 
+                            v |= v >> 2;
+                            v |= v >> 4;
+                            v |= v >> 8;
+                            v2 = (v >> 1) & v2;
+                        }
+                        v++;
+                        v >>= 1;
+                        
+                        //currentbit going stupid high for no reason
+
+                        childBoard[currentCell] = v;
+
+                        if(solve(childBoard)){
+                            return 1;
+                            childSolve = 1;
+                        } else {
+                            currentBit++;
+                            if(currentBit == candidateNo){
+                                currentBit = 0;
+                                currentCell++;
+                            }
+                        }
+                    } else {
+                        currentCell++;
+                    }
                 }
+                                
             }
         } else {
             currentWidth = 1;
@@ -410,7 +444,7 @@ int readSudokusFromFile(char *fileName, int* intBoards, int newLineDelimeted, in
         fclose(f);
         return 1;
     } else if (!newLineDelimeted){
-        char puzzle[area + 2]; //+ 2 for null char and EOL
+        char puzzle[area + 4]; //+ 2 for null char and EOL
         for(int i = 0; i < number * area; i += area){
             fgets(puzzle, sizeof(puzzle), f);
             for(int y = 0; y < area; y++){
@@ -507,7 +541,12 @@ int main(int argc, char **argv) {
             for(int y = 0; y < area; y++){
                 if(solBoard[i * area + y] != intBoard[i * area + y]) allMatch = 0;
             }
-            //if(!allMatch) printf("%d,", i);
+            // if(!allMatch) {
+            //     printIntBoard(&intBoard[i * area]);
+            //     printf("--\n");
+            //     printIntBoard(&solBoard[i * area]);
+            //     printf("------------------------------\n");
+            // }
             successNo += allMatch;
         }
         //printf("\n");
