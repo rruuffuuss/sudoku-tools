@@ -12,9 +12,9 @@ permutation_certainty_max = 9
 permutation_width_min = 2
 permutation_certainty_min = 5
 
-test_filepath = "./examples/allUnsolveableTest.csv"
-solution_filepath = "./examples/allUnsolveableTestSolutions.csv"
-test_number = 100
+test_filepath = "./examples/test5.csv"
+solution_filepath = "./examples/test5solutions.csv"
+test_number = 1000
 
 results = [None] * (permutation_width_max - permutation_width_min) * (permutation_certainty_max - permutation_certainty_min) 
 
@@ -38,7 +38,7 @@ for i in range(permutation_certainty_max - permutation_certainty_min):
 
 
         if(test_process.returncode != 0):
-            print("test execution failed")
+            print("test execution failed" + str(test_process.returncode))
             print(test_process.stdout.readline())
         else: 
             results[(i * (permutation_width_max - permutation_width_min) + y)] = [int(r) for r in test_process.stdout.readline().split(' ')]
@@ -53,7 +53,7 @@ test_process.stdout.close()
 test_process.stderr.close()
 
 
-df = pd.DataFrame(results, columns= ["width", "certainty", "successNo", "time"])
+df = pd.DataFrame(results, columns= ["width", "certainty", "successNo", "correctNo", "time"])
 df["time/puzzle"] = [t / test_number for t in df["time"]]
 
 df = df[df['successNo'] == float(df['successNo'].max())]

@@ -7,6 +7,8 @@
 /*
 TODO
 possibly treat permutation certainty like width and increment the certainty used depending on the success/failure of previous runs
+
+file read still needs fixing. 934655487 puzzle not being read from start of line
 */
 
 
@@ -19,8 +21,8 @@ int permutationCertainty = 6; //max number of potential values for any given cel
 
 int num_of_puzzles = 500;
 
-char puzzlePath[50] = "../examples/allUnsolveableTest.csv";
-char solutionPath[50] = "../examples/allUnsolveableTestSolutions.csv";
+char puzzlePath[50] = "../examples/test5.csv";
+char solutionPath[50] = "../examples/test5solutions.csv";
 
 void intToMap(int n, int *c){
     *c = 1 << (n);
@@ -358,7 +360,7 @@ int solve(int* board){
                 {
                     
                     if(__builtin_popcount(board[currentCell]) == candidateNo){
-                        int childBoard[area * num_of_puzzles];
+                        int childBoard[area];
                         memcpy(childBoard, board, sizeof(int) * area);
                         
                         int v;
@@ -531,7 +533,7 @@ int main(int argc, char **argv) {
     printf("a solution was found for %d puzzles\n", successNo);
     */
 
-    successNo = 0;
+    int correctNo = 0;
     int allMatch;
     if(readSudokusFromFile(solutionPath, solBoard, 0, num_of_puzzles)){
         for(int i = 0; i < num_of_puzzles; i++){
@@ -539,18 +541,25 @@ int main(int argc, char **argv) {
             for(int y = 0; y < area; y++){
                 if(solBoard[i * area + y] != intBoard[i * area + y]) allMatch = 0;
             }
+            if(allMatch == 0){
+                printIntBoard(&intBoard[i]);
+                printf("\n---------\n");
+                printIntBoard(&solBoard[i]);
+                printf("\n---------\n--------\n");
+            }
             // if(!allMatch) {
             //     printIntBoard(&intBoard[i * area]);
             //     printf("--\n");
             //     printIntBoard(&solBoard[i * area]);
             //     printf("------------------------------\n");
             // }
-            successNo += allMatch;
+            correctNo += allMatch;
         }
         //printf("\n");
         printf("%d ", permutationWidth);
         printf("%d ", permutationCertainty);
         printf("%d ", successNo);
+        printf("%d ", correctNo);
         printf("%d", elapsed_us);
         
        
